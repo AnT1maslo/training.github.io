@@ -1,0 +1,1721 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Программа Тренировок PRO</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Тренировки">
+    <meta name="theme-color" content="#1a1a1a">
+    <meta name="description" content="Программа тренировок с отслеживанием прогресса">
+
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%23FF6B4E;stop-opacity:1'/><stop offset='100%' style='stop-color:%23E85D3F;stop-opacity:1'/></linearGradient></defs><rect width='180' height='180' fill='url(%23grad)'/><text x='90' y='120' font-size='80' text-anchor='middle' fill='white' font-family='Arial'>💪</text></svg>">
+
+    <!-- Manifest -->
+    <link rel="manifest" href="data:application/json;base64,ewogICJuYW1lIjogItCf0YDQvtCz0YDQsNC80LzQsCDQotGA0LXQvdC40YDQvtCy0L7QuiIsCiAgInNob3J0X25hbWUiOiAi0KLRgNC10L3QuNGA0L7QstC60LgiLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxYTFhMWEiLAogICJ0aGVtZV9jb2xvciI6ICIjRkY2QjRFIiwKICAic3RhcnRfdXJsIjogIi4iLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJkYXRhOmltYWdlL3N2Zyt4bWwsPHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHZpZXdCb3g9JzAgMCAxODAgMTgwJz48cmVjdCB3aWR0aD0nMTgwJyBoZWlnaHQ9JzE4MCcgZmlsbD0nJTIzRkY2QjRFJy8+PHRleHQgeD0nOTAnIHk9JzEyMCcgZm9udC1zaXplPSc4MCcgdGV4dC1hbmNob3I9J21pZGRsZScgZmlsbD0nd2hpdGUnIGZvbnQtZmFtaWx5PSdBcmlhbCc+4pi8PC90ZXh0Pjwvc3ZnPiIsCiAgICAgICJzaXplcyI6ICIxODB4MTgwIiwKICAgICAgInR5cGUiOiAiaW1hZ2Uvc3ZnK3htbCIKICAgIH0KICBdCn0=">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: #fff;
+            min-height: 100vh;
+            padding-bottom: 80px;
+            padding-bottom: calc(80px + env(safe-area-inset-bottom));
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            user-select: none;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 10px;
+            padding-top: max(10px, env(safe-area-inset-top));
+        }
+
+        .header {
+            background: linear-gradient(135deg, #FF6B4E 0%, #E85D3F 100%);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 20px rgba(255, 107, 78, 0.3);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .header p {
+            text-align: center;
+            opacity: 0.9;
+            font-size: 14px;
+        }
+
+        .timer-floating {
+            position: fixed;
+            bottom: 90px;
+            bottom: calc(90px + env(safe-area-inset-bottom));
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            padding: 15px 20px;
+            border-radius: 15px;
+            box-shadow: 0 8px 30px rgba(76, 175, 80, 0.5);
+            z-index: 999;
+            display: none;
+            min-width: 300px;
+            max-width: 90%;
+        }
+
+        .timer-floating.active {
+            display: block;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateX(-50%) translateY(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(-50%) translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .timer-display {
+            font-size: 36px;
+            font-weight: bold;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            margin: 5px 0;
+        }
+
+        .timer-controls {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+
+        .timer-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .timer-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .timer-btn:active {
+            transform: scale(0.95);
+        }
+
+        .tabs {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 5px;
+            padding-bottom: calc(10px + env(safe-area-inset-bottom));
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: #aaa;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 11px;
+            text-align: center;
+            transition: all 0.3s;
+            flex: 1;
+            max-width: 120px;
+        }
+
+        .tab-btn .icon {
+            font-size: 20px;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .tab-btn.active {
+            color: #FF6B4E;
+        }
+
+        .tab-btn:hover {
+            color: #fff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-card .icon {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #FF6B4E;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            font-size: 12px;
+            color: #aaa;
+            text-transform: uppercase;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .chart-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #FF6B4E;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 250px;
+        }
+
+        .calendar {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .calendar-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #FF6B4E;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .calendar-days {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 10px 20px;
+            scrollbar-width: thin;
+            scrollbar-color: #FF6B4E rgba(255, 255, 255, 0.1);
+            scroll-padding: 20px;
+        }
+
+        .calendar-days::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .calendar-days::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .calendar-days::-webkit-scrollbar-thumb {
+            background: #FF6B4E;
+            border-radius: 3px;
+        }
+
+        .calendar-day {
+            min-width: 70px;
+            height: 80px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid transparent;
+            position: relative;
+        }
+
+        .calendar-day.completed {
+            background: rgba(76, 175, 80, 0.2);
+            border-color: #4CAF50;
+        }
+
+        .calendar-day.missed {
+            background: rgba(244, 67, 54, 0.2);
+            border-color: #f44336;
+        }
+
+        .calendar-day.upcoming {
+            background: rgba(255, 107, 78, 0.2);
+            border-color: #FF6B4E;
+        }
+
+        .calendar-day.today {
+            border-color: #FFD700;
+            box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+            border-width: 3px;
+            transform: scale(1.1);
+        }
+
+        .day-name {
+            font-size: 10px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+
+        .day-number {
+            font-weight: bold;
+        }
+
+        .exercise-block {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .exercise-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #FF6B4E;
+            margin-bottom: 15px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .test-input-section {
+            background: linear-gradient(135deg, #4A4A4A 0%, #3A3A3A 100%);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .test-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .test-label {
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .test-input {
+            width: 80px;
+            padding: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            border: none;
+            border-radius: 8px;
+            background: #FFEB3B;
+            color: #000;
+        }
+
+        .test-input:disabled {
+            background: #ccc;
+            opacity: 0.6;
+        }
+
+        .test-lock-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #388E3C 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .test-lock-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+        }
+
+        .test-lock-btn.locked {
+            background: linear-gradient(135deg, #FF6B4E 0%, #E85D3F 100%);
+        }
+
+        .stats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            font-size: 13px;
+            justify-content: center;
+        }
+
+        .stat-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 12px;
+            border-radius: 8px;
+            white-space: nowrap;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #90EE90;
+            margin-left: 5px;
+        }
+
+        .workout-table {
+            width: 100%;
+            margin-top: 15px;
+            border-collapse: separate;
+            border-spacing: 0 8px;
+        }
+
+        .workout-table th {
+            background: #3A3A3A;
+            padding: 10px 5px;
+            font-size: 11px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .workout-table td {
+            padding: 12px 5px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .day-cell {
+            background: #2A2A2A !important;
+            color: #FF6B4E;
+            font-weight: bold;
+        }
+
+        .reps-cell {
+            font-size: 16px;
+            color: #fff;
+        }
+
+        .total-cell {
+            background: rgba(255, 107, 78, 0.2) !important;
+            color: #FFD700;
+            font-size: 16px;
+        }
+
+        .checkbox-cell {
+            background: #FFF59D !important;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.3s;
+            color: #000;
+            font-size: 18px;
+        }
+
+        .checkbox-cell:hover {
+            background: #FFEB3B !important;
+        }
+
+        .checkbox-cell.checked {
+            background: #4CAF50 !important;
+            color: #fff;
+        }
+
+        .info-text {
+            text-align: center;
+            color: #aaa;
+            font-size: 12px;
+            font-style: italic;
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .reset-exercise-btn {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(244, 67, 54, 0.3);
+            transition: all 0.3s;
+        }
+
+        .reset-exercise-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(244, 67, 54, 0.4);
+        }
+
+        .sound-toggle {
+            position: fixed;
+            top: 20px;
+            top: max(20px, env(safe-area-inset-top));
+            right: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 20px;
+            transition: all 0.3s;
+            z-index: 1001;
+        }
+
+        .sound-toggle:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .sound-toggle.muted {
+            opacity: 0.5;
+        }
+
+        .upcoming-workouts {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .upcoming-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #FF6B4E;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .workout-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .workout-date {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .workout-status {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+
+        .workout-status.completed {
+            background: rgba(76, 175, 80, 0.3);
+            color: #4CAF50;
+        }
+
+        .workout-status.today {
+            background: rgba(255, 215, 0, 0.3);
+            color: #FFD700;
+        }
+
+        .workout-status.missed {
+            background: rgba(244, 67, 54, 0.3);
+            color: #f44336;
+        }
+
+        .workout-status.upcoming {
+            background: rgba(255, 107, 78, 0.3);
+            color: #FF6B4E;
+        }
+
+        .exercise-progress {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .chart-filter-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: #aaa;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .chart-filter-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .chart-filter-btn.active {
+            background: rgba(255, 107, 78, 0.3);
+            border-color: #FF6B4E;
+            color: #FF6B4E;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 20px;
+            }
+
+            .timer-display {
+                font-size: 28px;
+            }
+
+            .chart-wrapper {
+                height: 200px;
+            }
+
+            .stat-card .value {
+                font-size: 24px;
+            }
+
+            .calendar-days {
+                gap: 5px;
+            }
+
+            .calendar-day {
+                font-size: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔊</div>
+
+    <div class="timer-floating" id="timerFloating">
+        <div style="text-align: center; font-size: 14px; margin-bottom: 5px;">⏱ Отдых</div>
+        <div class="timer-display" id="timerDisplay">00:00</div>
+        <div class="timer-controls">
+            <button class="timer-btn" onclick="startTimer(60)">60s</button>
+            <button class="timer-btn" onclick="startTimer(90)">90s</button>
+            <button class="timer-btn" onclick="startTimer(120)">120s</button>
+            <button class="timer-btn" onclick="pauseTimer()">⏸</button>
+            <button class="timer-btn" onclick="resetTimer()">⏹</button>
+            <button class="timer-btn" onclick="hideTimer()">✕</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>💪 ПРОГРАММА ТРЕНИРОВОК PRO</h1>
+            <p>Следуйте программе • Тренируйтесь через день (пн-ср-пт)</p>
+        </div>
+
+        <div id="statsTab" class="tab-content active">
+            <div class="calendar">
+                <div class="calendar-title">📅 НЕДЕЛЯ ТРЕНИРОВОК</div>
+                <div class="calendar-days" id="calendarDays"></div>
+            </div>
+
+            <div class="upcoming-workouts">
+                <div class="upcoming-title">РАСПИСАНИЕ</div>
+                <div id="upcomingList"></div>
+            </div>
+
+            <div class="chart-container">
+                <div class="chart-title">📊 ГРАФИК ПРОГРЕССА</div>
+                <div class="chart-wrapper">
+                    <canvas id="progressChart"></canvas>
+                </div>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-top: 15px;">
+                    <button class="chart-filter-btn active" data-exercise="pushups" onclick="toggleChartFilter('pushups')">
+                        💪 Отжимания
+                    </button>
+                    <button class="chart-filter-btn active" data-exercise="squats" onclick="toggleChartFilter('squats')">
+                        🦵 Приседания
+                    </button>
+                    <button class="chart-filter-btn active" data-exercise="abs" onclick="toggleChartFilter('abs')">
+                        🔥 Пресс
+                    </button>
+                    <button class="chart-filter-btn active" data-exercise="pullups" onclick="toggleChartFilter('pullups')">
+                        🏋️ Подтяг.
+                    </button>
+                    <button class="chart-filter-btn active" data-exercise="plank" onclick="toggleChartFilter('plank')">
+                        ⏱️ Планка
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="pushupsTab" class="tab-content"></div>
+        <div id="squatsTab" class="tab-content"></div>
+        <div id="absTab" class="tab-content"></div>
+        <div id="pullupsTab" class="tab-content"></div>
+        <div id="plankTab" class="tab-content"></div>
+    </div>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('stats')">
+            <span class="icon">📊</span>
+            Статистика
+        </button>
+        <button class="tab-btn" onclick="switchTab('pushups')">
+            <span class="icon">💪</span>
+            Отжимания
+        </button>
+        <button class="tab-btn" onclick="switchTab('squats')">
+            <span class="icon">🦵</span>
+            Приседания
+        </button>
+        <button class="tab-btn" onclick="switchTab('abs')">
+            <span class="icon">🔥</span>
+            Пресс
+        </button>
+        <button class="tab-btn" onclick="switchTab('pullups')">
+            <span class="icon">🏋️</span>
+            Подтяг.
+        </button>
+        <button class="tab-btn" onclick="switchTab('plank')">
+            <span class="icon">⏱️</span>
+            Планка
+        </button>
+    </div>
+
+    <script>
+        const exercises = [
+            { name: 'ОТЖИМАНИЯ', unit: 'раз', key: 'pushups', icon: '💪' },
+            { name: 'ПРИСЕДАНИЯ', unit: 'раз', key: 'squats', icon: '🦵' },
+            { name: 'ПРЕСС', unit: 'раз', key: 'abs', icon: '🔥' },
+            { name: 'ПОДТЯГИВАНИЯ', unit: 'раз', key: 'pullups', icon: '🏋️' },
+            { name: 'ПЛАНКА', unit: 'сек', key: 'plank', icon: '⏱️' }
+        ];
+
+        const progressions = [
+            [0.45, 0.40, 0.35, 0.30, 0.25],
+            [0.50, 0.40, 0.40, 0.35, 0.30],
+            [0.55, 0.45, 0.40, 0.40, 0.35]
+        ];
+
+        let timerInterval = null;
+        let timeRemaining = 0;
+        let soundEnabled = true;
+        let progressChart = null;
+        let chartFilters = {
+            pushups: true,
+            squats: true,
+            abs: true,
+            pullups: true,
+            plank: true
+        };
+
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playBeep(frequency = 440, duration = 200) {
+            if (!soundEnabled) return;
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            oscillator.frequency.value = frequency;
+            oscillator.type = 'sine';
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + duration / 1000);
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration / 1000);
+        }
+
+        function playFinishSound() {
+            if (!soundEnabled) return;
+            playBeep(523, 150);
+            setTimeout(() => playBeep(659, 150), 150);
+            setTimeout(() => playBeep(784, 300), 300);
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('soundToggle');
+            btn.textContent = soundEnabled ? '🔊' : '🔇';
+            btn.classList.toggle('muted', !soundEnabled);
+            localStorage.setItem('soundEnabled', soundEnabled);
+        }
+
+        function showTimer() {
+            document.getElementById('timerFloating').classList.add('active');
+        }
+
+        function hideTimer() {
+            document.getElementById('timerFloating').classList.remove('active');
+            resetTimer();
+        }
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+        }
+
+        function startTimer(seconds) {
+            showTimer();
+            resetTimer();
+            timeRemaining = seconds;
+            document.getElementById('timerDisplay').textContent = formatTime(timeRemaining);
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                document.getElementById('timerDisplay').textContent = formatTime(timeRemaining);
+
+                if (timeRemaining <= 3 && timeRemaining > 0) {
+                    playBeep(880, 100);
+                }
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    playFinishSound();
+                    if (navigator.vibrate) {
+                        navigator.vibrate([200, 100, 200, 100, 200]);
+                    }
+                    // Автоматически скрываем таймер через 2 секунды после окончания
+                    setTimeout(() => {
+                        hideTimer();
+                    }, 2000);
+                }
+            }, 1000);
+        }
+
+        function pauseTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        function resetTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+            timeRemaining = 0;
+            document.getElementById('timerDisplay').textContent = '00:00';
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            document.getElementById(tabName + 'Tab').classList.add('active');
+            event.target.closest('.tab-btn').classList.add('active');
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('progressChart').getContext('2d');
+            const colors = {
+                pushups: { border: '#FF6B4E', bg: 'rgba(255, 107, 78, 0.1)' },
+                squats: { border: '#4CAF50', bg: 'rgba(76, 175, 80, 0.1)' },
+                abs: { border: '#FFC107', bg: 'rgba(255, 193, 7, 0.1)' },
+                pullups: { border: '#2196F3', bg: 'rgba(33, 150, 243, 0.1)' },
+                plank: { border: '#9C27B0', bg: 'rgba(156, 39, 176, 0.1)' }
+            };
+
+            progressChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: []
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#fff',
+                                padding: 15,
+                                font: { size: 12 }
+                            },
+                            onClick: (e, legendItem, legend) => {
+                                const index = legendItem.datasetIndex;
+                                const exerciseKey = exercises[index].key;
+                                toggleChartFilter(exerciseKey);
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#fff' },
+                            grid: { color: 'rgba(255, 255, 255, 0.1)' }
+                        }
+                    }
+                }
+            });
+            updateChart();
+        }
+
+        function toggleChartFilter(exerciseKey) {
+            chartFilters[exerciseKey] = !chartFilters[exerciseKey];
+            const btn = document.querySelector(`.chart-filter-btn[data-exercise="${exerciseKey}"]`);
+            if (btn) {
+                btn.classList.toggle('active', chartFilters[exerciseKey]);
+            }
+            updateChart();
+        }
+
+        function updateChart() {
+            if (!progressChart) {
+                return; // График еще не инициализирован
+            }
+
+            const colors = {
+                pushups: { border: '#FF6B4E', bg: 'rgba(255, 107, 78, 0.1)' },
+                squats: { border: '#4CAF50', bg: 'rgba(76, 175, 80, 0.1)' },
+                abs: { border: '#FFC107', bg: 'rgba(255, 193, 7, 0.1)' },
+                pullups: { border: '#2196F3', bg: 'rgba(33, 150, 243, 0.1)' },
+                plank: { border: '#9C27B0', bg: 'rgba(156, 39, 176, 0.1)' }
+            };
+
+            // Находим максимальную длину истории
+            let maxLength = 0;
+            exercises.forEach(ex => {
+                const history = getHistory(ex.key);
+                maxLength = Math.max(maxLength, history.length);
+            });
+
+            // Генерируем labels
+            const labels = [];
+            for (let i = 1; i <= maxLength; i++) {
+                labels.push(`Тест ${i}`);
+            }
+
+            // Генерируем datasets для активных упражнений
+            const datasets = exercises
+                .filter(ex => chartFilters[ex.key])
+                .map(ex => {
+                    const history = getHistory(ex.key);
+                    return {
+                        label: ex.name,
+                        data: history,
+                        borderColor: colors[ex.key].border,
+                        backgroundColor: colors[ex.key].bg,
+                        tension: 0.4,
+                        fill: false,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        borderWidth: 2
+                    };
+                });
+
+            progressChart.data.labels = labels;
+            progressChart.data.datasets = datasets;
+            progressChart.update();
+        }
+
+        function getHistory(exerciseKey) {
+            return JSON.parse(localStorage.getItem(`history-${exerciseKey}`) || '[]');
+        }
+
+        function saveHistory(exerciseKey, value) {
+            const history = getHistory(exerciseKey);
+            if (value > 0) {
+                history.push(value);
+                localStorage.setItem(`history-${exerciseKey}`, JSON.stringify(history));
+                updateChart();
+            }
+        }
+
+        function isTestLocked(exerciseKey) {
+            return localStorage.getItem(`testLocked-${exerciseKey}`) === 'true';
+        }
+
+        function setTestLocked(exerciseKey, locked) {
+            localStorage.setItem(`testLocked-${exerciseKey}`, locked);
+        }
+
+        function toggleTestLock(exerciseKey) {
+            const input = document.getElementById(`test-${exerciseKey}`);
+            const btn = document.getElementById(`lock-btn-${exerciseKey}`);
+            const isLocked = isTestLocked(exerciseKey);
+
+            if (isLocked) {
+                // Разблокировать
+                input.disabled = false;
+                btn.textContent = '🔒 Записать тест';
+                btn.classList.remove('locked');
+                setTestLocked(exerciseKey, false);
+            } else {
+                // Заблокировать и сохранить в историю
+                const value = parseInt(input.value) || 0;
+                if (value > 0) {
+                    saveHistory(exerciseKey, value);
+                    input.disabled = true;
+                    btn.textContent = '🔓 Пройти новый тест';
+                    btn.classList.add('locked');
+                    setTestLocked(exerciseKey, true);
+
+                    // Сбрасываем все чекбоксы после прохождения теста
+                    for (let day = 1; day <= 3; day++) {
+                        for (let set = 1; set <= 5; set++) {
+                            const checkbox = document.getElementById(`check-${exerciseKey}-${day}-${set}`);
+                            if (checkbox) {
+                                checkbox.classList.remove('checked');
+                                checkbox.textContent = '';
+                            }
+                        }
+                        // Обновляем итоги для каждого дня
+                        document.getElementById(`total-${exerciseKey}-${day}`).textContent = 0;
+                    }
+
+                    saveToLocalStorage();
+                    playBeep(600, 100);
+                } else {
+                    alert('Введите результат теста перед блокировкой!');
+                }
+            }
+        }
+
+        function getCompletedExercisesForDay(date) {
+            const dateStr = date.toISOString().split('T')[0];
+            const completed = JSON.parse(localStorage.getItem(`completed-${dateStr}`) || '[]');
+            return completed;
+        }
+
+        function markExerciseCompleted(exerciseKey, date) {
+            const dateStr = date.toISOString().split('T')[0];
+            const completed = getCompletedExercisesForDay(date);
+            if (!completed.includes(exerciseKey)) {
+                completed.push(exerciseKey);
+                localStorage.setItem(`completed-${dateStr}`, JSON.stringify(completed));
+            }
+        }
+
+        function isDayFullyCompleted(date) {
+            const completed = getCompletedExercisesForDay(date);
+            return completed.length === exercises.length;
+        }
+
+        function getWorkoutDates() {
+            const dates = JSON.parse(localStorage.getItem('workoutDates') || '[]');
+            return dates.map(d => new Date(d));
+        }
+
+        function saveWorkoutDate(date) {
+            if (isDayFullyCompleted(date)) {
+                const dates = getWorkoutDates();
+                const dateStr = date.toISOString().split('T')[0];
+                if (!dates.some(d => d.toISOString().split('T')[0] === dateStr)) {
+                    dates.push(date);
+                    localStorage.setItem('workoutDates', JSON.stringify(dates.map(d => d.toISOString())));
+                }
+            }
+        }
+
+        function getNextWorkoutDays() {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const workoutDates = getWorkoutDates();
+            const upcoming = [];
+
+            // Находим последнюю завершенную тренировку
+            let lastWorkoutDate = null;
+            if (workoutDates.length > 0) {
+                const sortedDates = workoutDates.sort((a, b) => b - a);
+                lastWorkoutDate = new Date(sortedDates[0]);
+                lastWorkoutDate.setHours(0, 0, 0, 0);
+            }
+
+            // Определяем дату следующей тренировки
+            let nextWorkoutDate;
+            if (lastWorkoutDate && lastWorkoutDate.toDateString() === today.toDateString()) {
+                // Если тренировка была сегодня, следующая через 2 дня
+                nextWorkoutDate = new Date(today);
+                nextWorkoutDate.setDate(today.getDate() + 2);
+            } else if (lastWorkoutDate && lastWorkoutDate < today) {
+                // Если последняя тренировка была в прошлом, следующая через 2 дня от неё
+                nextWorkoutDate = new Date(lastWorkoutDate);
+                nextWorkoutDate.setDate(lastWorkoutDate.getDate() + 2);
+            } else {
+                // Если тренировок нет, начинаем с сегодня
+                nextWorkoutDate = new Date(today);
+            }
+
+            // Генерируем 3 следующие тренировочные даты с интервалом в 2 дня
+            for (let i = 0; i < 3; i++) {
+                const workoutDate = new Date(nextWorkoutDate);
+                workoutDate.setDate(nextWorkoutDate.getDate() + (i * 2));
+                upcoming.push(workoutDate);
+            }
+
+            return upcoming;
+        }
+
+        function updateCalendar() {
+            const container = document.getElementById('calendarDays');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+            const workoutDates = getWorkoutDates();
+            const upcoming = getNextWorkoutDays();
+
+            container.innerHTML = '';
+
+            // Генерируем список всех планируемых тренировочных дат
+            const allScheduledDates = [];
+
+            // Добавляем все выполненные тренировки
+            workoutDates.forEach(wd => {
+                const date = new Date(wd);
+                date.setHours(0, 0, 0, 0);
+                if (!allScheduledDates.some(d => d.toDateString() === date.toDateString())) {
+                    allScheduledDates.push(date);
+                }
+            });
+
+            // Генерируем ожидаемые даты между тренировками
+            if (workoutDates.length > 0) {
+                const sortedWorkouts = workoutDates.sort((a, b) => a - b);
+                let currentDate = new Date(sortedWorkouts[0]);
+                currentDate.setHours(0, 0, 0, 0);
+
+                // Генерируем даты каждые 2 дня до сегодня
+                while (currentDate <= today) {
+                    if (!allScheduledDates.some(d => d.toDateString() === currentDate.toDateString())) {
+                        allScheduledDates.push(new Date(currentDate));
+                    }
+                    currentDate.setDate(currentDate.getDate() + 2);
+                }
+            } else {
+                // Если тренировок нет, показываем последние 7 дней
+                const startDate = new Date(today);
+                startDate.setDate(today.getDate() - 14);
+                let currentDate = new Date(startDate);
+                while (currentDate <= today) {
+                    allScheduledDates.push(new Date(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 2);
+                }
+            }
+
+            // Добавляем будущие тренировки
+            upcoming.forEach(date => {
+                if (!allScheduledDates.some(d => d.toDateString() === date.toDateString())) {
+                    allScheduledDates.push(date);
+                }
+            });
+
+            // Сортируем даты
+            allScheduledDates.sort((a, b) => a - b);
+
+            // Формируем список для отображения
+            allScheduledDates.forEach(date => {
+                const dateObj = new Date(date);
+                dateObj.setHours(0, 0, 0, 0);
+                const isToday = dateObj.toDateString() === today.toDateString();
+                const isCompleted = workoutDates.some(wd => {
+                    const wd2 = new Date(wd);
+                    wd2.setHours(0, 0, 0, 0);
+                    return wd2.toDateString() === dateObj.toDateString();
+                });
+                const isPast = dateObj < today;
+                const isFuture = dateObj > today;
+                const isMissed = isPast && !isCompleted;
+
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day';
+
+                if (isCompleted) dayDiv.classList.add('completed');
+                else if (isMissed) dayDiv.classList.add('missed');
+                else if (isFuture) dayDiv.classList.add('upcoming');
+
+                if (isToday) dayDiv.classList.add('today');
+
+                dayDiv.innerHTML = `
+                    <div class="day-name">${dayNames[dateObj.getDay()]}</div>
+                    <div class="day-number">${dateObj.getDate()}</div>
+                `;
+                container.appendChild(dayDiv);
+            });
+
+            // Прокручиваем к сегодняшнему дню
+            setTimeout(() => {
+                const todayElement = container.querySelector('.calendar-day.today');
+                if (todayElement) {
+                    todayElement.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                }
+            }, 100);
+        }
+
+        function updateUpcoming() {
+            const container = document.getElementById('upcomingList');
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const workoutDates = getWorkoutDates();
+            const upcoming = getNextWorkoutDays();
+            const dayNames = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+            const months = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'];
+
+            // Генерируем список всех планируемых тренировок
+            const allWorkouts = [];
+
+            // Генерируем ожидаемые прошлые даты
+            if (workoutDates.length > 0) {
+                const sortedWorkouts = workoutDates.sort((a, b) => a - b);
+                let currentDate = new Date(sortedWorkouts[0]);
+                currentDate.setHours(0, 0, 0, 0);
+
+                const expectedPastDates = [];
+                while (currentDate < today) {
+                    expectedPastDates.push(new Date(currentDate));
+                    currentDate.setDate(currentDate.getDate() + 2);
+                }
+
+                // Берем последние 3 ожидаемые даты
+                expectedPastDates.slice(-3).forEach(date => {
+                    allWorkouts.push(date);
+                });
+            }
+
+            // Всегда добавляем сегодня в список
+            if (!allWorkouts.some(d => d.toDateString() === today.toDateString())) {
+                allWorkouts.push(new Date(today));
+            }
+
+            // Добавляем будущие тренировки
+            upcoming.forEach(date => {
+                if (!allWorkouts.some(d => d.toDateString() === date.toDateString())) {
+                    allWorkouts.push(date);
+                }
+            });
+
+            // Сортируем и ограничиваем до 7 элементов
+            allWorkouts.sort((a, b) => a - b);
+            const toShow = allWorkouts.slice(-7);
+
+            container.innerHTML = toShow.map(date => {
+                const dateObj = new Date(date);
+                dateObj.setHours(0, 0, 0, 0);
+                const isToday = dateObj.toDateString() === today.toDateString();
+                const isPast = dateObj < today;
+                const isFuture = dateObj > today;
+
+                // Проверяем выполненные упражнения
+                const completedEx = getCompletedExercisesForDay(dateObj);
+                const hasCompletedExercises = completedEx.length > 0;
+
+                // День считается выполненным только если выполнено хотя бы одно упражнение
+                const isCompleted = workoutDates.some(wd => {
+                    const wd2 = new Date(wd);
+                    wd2.setHours(0, 0, 0, 0);
+                    return wd2.toDateString() === dateObj.toDateString();
+                }) && hasCompletedExercises;
+
+                // Определяем пропущенную тренировку
+                const isMissed = isPast && !hasCompletedExercises;
+
+                const dateStr = `${dayNames[dateObj.getDay()]}, ${dateObj.getDate()} ${months[dateObj.getMonth()]}`;
+                const progress = `${completedEx.length} из ${exercises.length}`;
+
+                let status = '';
+                let statusClass = '';
+
+                if (isToday) {
+                    // Сегодня всегда "Тренировка", если не завершена полностью
+                    if (completedEx.length === exercises.length) {
+                        status = '✓ Выполнено';
+                        statusClass = 'completed';
+                    } else {
+                        status = '🏋️ Тренировка';
+                        statusClass = 'today';
+                    }
+                } else if (isCompleted) {
+                    status = '✓ Выполнено';
+                    statusClass = 'completed';
+                } else if (isMissed) {
+                    status = '✗ Пропущено';
+                    statusClass = 'missed';
+                } else {
+                    status = 'Предстоит';
+                    statusClass = 'upcoming';
+                }
+
+                return `
+                    <div class="workout-item">
+                        <div>
+                            <div class="workout-date">${dateStr}</div>
+                            <div class="exercise-progress">${progress} упражнений</div>
+                        </div>
+                        <div class="workout-status ${statusClass}">
+                            ${status}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateStats() {
+            // Функция больше не обновляет UI, так как карточки статистики удалены
+            // Оставляем её для совместимости, но она ничего не делает
+        }
+
+        function isExerciseCompletedForDay(exerciseKey, day) {
+            for (let set = 1; set <= 5; set++) {
+                const checkbox = document.getElementById(`check-${exerciseKey}-${day}-${set}`);
+                if (!checkbox || !checkbox.classList.contains('checked')) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function calculateDayTotal(exerciseKey, day) {
+            const testValue = parseInt(document.getElementById(`test-${exerciseKey}`).value) || 0;
+            let total = 0;
+
+            for (let set = 1; set <= 5; set++) {
+                const checkbox = document.getElementById(`check-${exerciseKey}-${day}-${set}`);
+                if (checkbox && checkbox.classList.contains('checked')) {
+                    const reps = calculateReps(testValue, progressions[day - 1][set - 1]);
+                    total += reps;
+                }
+            }
+
+            return total;
+        }
+
+        function saveToLocalStorage() {
+            const data = {};
+            exercises.forEach(ex => {
+                const testInput = document.getElementById(`test-${ex.key}`);
+                if (!testInput) return;
+
+                const testValue = testInput.value;
+                data[ex.key] = {
+                    test: testValue,
+                    checks: []
+                };
+
+                for (let day = 1; day <= 3; day++) {
+                    for (let set = 1; set <= 5; set++) {
+                        const checkbox = document.getElementById(`check-${ex.key}-${day}-${set}`);
+                        if (checkbox && checkbox.classList.contains('checked')) {
+                            data[ex.key].checks.push(`${day}-${set}`);
+                        }
+                    }
+                }
+            });
+            localStorage.setItem('workoutData', JSON.stringify(data));
+            updateStats();
+        }
+
+        function loadFromLocalStorage() {
+            const data = JSON.parse(localStorage.getItem('workoutData') || '{}');
+            const savedSound = localStorage.getItem('soundEnabled');
+            if (savedSound !== null) {
+                soundEnabled = savedSound === 'true';
+                document.getElementById('soundToggle').textContent = soundEnabled ? '🔊' : '🔇';
+                document.getElementById('soundToggle').classList.toggle('muted', !soundEnabled);
+            }
+
+            exercises.forEach(ex => {
+                if (data[ex.key]) {
+                    const testInput = document.getElementById(`test-${ex.key}`);
+                    if (testInput) {
+                        testInput.value = data[ex.key].test || 0;
+
+                        const lockBtn = document.getElementById(`lock-btn-${ex.key}`);
+                        if (isTestLocked(ex.key)) {
+                            testInput.disabled = true;
+                            lockBtn.textContent = '🔓 Пройти новый тест';
+                            lockBtn.classList.add('locked');
+                        }
+
+                        updateCalculations(ex.key);
+
+                        data[ex.key].checks.forEach(checkId => {
+                            const checkbox = document.getElementById(`check-${ex.key}-${checkId}`);
+                            if (checkbox) {
+                                checkbox.classList.add('checked');
+                                checkbox.textContent = '✓';
+                            }
+                        });
+
+                        // Обновляем итоги для всех дней
+                        for (let day = 1; day <= 3; day++) {
+                            const total = calculateDayTotal(ex.key, day);
+                            document.getElementById(`total-${ex.key}-${day}`).textContent = total;
+                        }
+                    }
+                }
+            });
+
+            updateStats();
+            updateCalendar();
+            updateUpcoming();
+        }
+
+        function calculateReps(testValue, percentage) {
+            return Math.round(testValue * percentage);
+        }
+
+        function updateCalculations(exerciseKey) {
+            let testValue = parseInt(document.getElementById(`test-${exerciseKey}`).value) || 0;
+
+            // Для планки округляем до кратного 10
+            if (exerciseKey === 'plank') {
+                testValue = Math.round(testValue / 10) * 10;
+                document.getElementById(`test-${exerciseKey}`).value = testValue;
+            }
+
+            const forecast = Math.round(testValue * 1.15);
+            document.getElementById(`forecast-${exerciseKey}`).textContent = forecast;
+
+            const weekGoal = Math.round(testValue * 4.5);
+            document.getElementById(`goal-${exerciseKey}`).textContent = weekGoal;
+
+            for (let day = 0; day < 3; day++) {
+                for (let set = 0; set < 5; set++) {
+                    let reps = calculateReps(testValue, progressions[day][set]);
+                    // Для планки округляем до кратного 10
+                    if (exerciseKey === 'plank') {
+                        reps = Math.round(reps / 10) * 10;
+                    }
+                    document.getElementById(`reps-${exerciseKey}-${day + 1}-${set + 1}`).textContent = reps;
+                }
+
+                const total = calculateDayTotal(exerciseKey, day + 1);
+                document.getElementById(`total-${exerciseKey}-${day + 1}`).textContent = total;
+            }
+        }
+
+        function toggleCheck(exerciseKey, day, set) {
+            const checkbox = document.getElementById(`check-${exerciseKey}-${day}-${set}`);
+            const wasChecked = checkbox.classList.contains('checked');
+
+            // Для планки: запускаем таймер выполнения только если отмечаем галочку
+            if (exerciseKey === 'plank' && !wasChecked) {
+                const testValue = parseInt(document.getElementById(`test-${exerciseKey}`).value) || 0;
+                const reps = calculateReps(testValue, progressions[day - 1][set - 1]);
+
+                // Запускаем таймер выполнения подхода
+                showTimer();
+                startPlankWorkTimer(reps, () => {
+                    // После выполнения подхода отмечаем галочку
+                    checkbox.classList.add('checked');
+                    checkbox.textContent = '✓';
+                    playBeep(600, 100);
+
+                    // Обновляем итог дня
+                    const total = calculateDayTotal(exerciseKey, day);
+                    document.getElementById(`total-${exerciseKey}-${day}`).textContent = total;
+
+                    saveToLocalStorage();
+
+                    // Если не последний подход, запускаем таймер отдыха
+                    if (set < 5) {
+                        setTimeout(() => {
+                            startTimer(90);
+                        }, 1000);
+                    }
+
+                    // Проверяем завершение упражнения
+                    checkExerciseCompletion(exerciseKey);
+                });
+                return;
+            }
+
+            // Для остальных упражнений и для снятия галочки с планки
+            checkbox.classList.toggle('checked');
+            checkbox.textContent = checkbox.classList.contains('checked') ? '✓' : '';
+
+            if (checkbox.classList.contains('checked')) {
+                playBeep(600, 100);
+                if (set < 5 && exerciseKey !== 'plank') {
+                    showTimer();
+                    startTimer(90);
+                }
+            }
+
+            // Обновляем итог дня
+            const total = calculateDayTotal(exerciseKey, day);
+            document.getElementById(`total-${exerciseKey}-${day}`).textContent = total;
+
+            // Проверяем завершение упражнения
+            checkExerciseCompletion(exerciseKey);
+
+            saveToLocalStorage();
+        }
+
+        function checkExerciseCompletion(exerciseKey) {
+            let exerciseCompleted = false;
+            for (let d = 1; d <= 3; d++) {
+                if (isExerciseCompletedForDay(exerciseKey, d)) {
+                    exerciseCompleted = true;
+                    break;
+                }
+            }
+
+            if (exerciseCompleted) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                markExerciseCompleted(exerciseKey, today);
+                saveWorkoutDate(today);
+            }
+
+            updateCalendar();
+            updateUpcoming();
+        }
+
+        function startPlankWorkTimer(seconds, onComplete) {
+            showTimer();
+            resetTimer();
+            timeRemaining = seconds;
+            document.getElementById('timerFloating').querySelector('div:first-child').textContent = '🏋️ ПЛАНКА - ВЫПОЛНЯЙ!';
+            document.getElementById('timerDisplay').textContent = formatTime(timeRemaining);
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                document.getElementById('timerDisplay').textContent = formatTime(timeRemaining);
+
+                if (timeRemaining <= 3 && timeRemaining > 0) {
+                    playBeep(880, 100);
+                }
+
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    playFinishSound();
+                    if (navigator.vibrate) {
+                        navigator.vibrate([200, 100, 200, 100, 200]);
+                    }
+                    document.getElementById('timerFloating').querySelector('div:first-child').textContent = '⏱ Отдых';
+                    if (onComplete) onComplete();
+                }
+            }, 1000);
+        }
+
+        function resetExercise(exerciseKey, exerciseName) {
+            if (confirm(`Вы уверены, что хотите сбросить все данные для "${exerciseName}"?\n\nЭто удалит:\n- Все отмеченные подходы\n- Результат теста\n- Историю тестов\n\nЭто действие нельзя отменить!`)) {
+                // Сбрасываем тест
+                document.getElementById(`test-${exerciseKey}`).value = 0;
+                document.getElementById(`test-${exerciseKey}`).disabled = false;
+
+                const lockBtn = document.getElementById(`lock-btn-${exerciseKey}`);
+                lockBtn.textContent = '🔒 Записать тест';
+                lockBtn.classList.remove('locked');
+                setTestLocked(exerciseKey, false);
+
+                // Сбрасываем все чекбоксы
+                for (let day = 1; day <= 3; day++) {
+                    for (let set = 1; set <= 5; set++) {
+                        const checkbox = document.getElementById(`check-${exerciseKey}-${day}-${set}`);
+                        if (checkbox) {
+                            checkbox.classList.remove('checked');
+                            checkbox.textContent = '';
+                        }
+                    }
+                }
+
+                // Удаляем историю
+                localStorage.removeItem(`history-${exerciseKey}`);
+
+                // Удаляем завершенные упражнения для всех дат
+                const allDates = Object.keys(localStorage).filter(key => key.startsWith('completed-'));
+                allDates.forEach(dateKey => {
+                    const completed = JSON.parse(localStorage.getItem(dateKey) || '[]');
+                    const filtered = completed.filter(ex => ex !== exerciseKey);
+                    if (filtered.length > 0) {
+                        localStorage.setItem(dateKey, JSON.stringify(filtered));
+                    } else {
+                        localStorage.removeItem(dateKey);
+                    }
+                });
+
+                // Пересчитываем workoutDates - удаляем даты где больше нет завершенных упражнений
+                const workoutDates = getWorkoutDates();
+                const validDates = workoutDates.filter(date => {
+                    return isDayFullyCompleted(date);
+                });
+                localStorage.setItem('workoutDates', JSON.stringify(validDates.map(d => d.toISOString())));
+
+                // Обновляем расчеты
+                updateCalculations(exerciseKey);
+                saveToLocalStorage();
+                updateStats();
+                updateCalendar();
+                updateUpcoming();
+                updateChart();
+
+                playBeep(400, 200);
+                alert(`Данные для "${exerciseName}" успешно сброшены!`);
+            }
+        }
+
+        function createExerciseBlock(exercise) {
+            const isPlank = exercise.key === 'plank';
+            const stepValue = isPlank ? '10' : '1';
+
+            return `
+                <div class="exercise-block">
+                    <div class="exercise-title">${exercise.icon} ${exercise.name}</div>
+
+                    <div class="test-input-section">
+                        <div class="test-row">
+                            <span class="test-label">ТЕСТ:</span>
+                            <input type="number"
+                                   id="test-${exercise.key}"
+                                   class="test-input"
+                                   value="0"
+                                   min="0"
+                                   step="${stepValue}"
+                                   oninput="updateCalculations('${exercise.key}')">
+                            <span style="margin-left: 5px;">${exercise.unit}</span>
+                        </div>
+                        <div class="test-row">
+                            <button class="test-lock-btn" id="lock-btn-${exercise.key}" onclick="toggleTestLock('${exercise.key}')">
+                                🔒 Записать тест
+                            </button>
+                        </div>
+
+                        <div class="stats">
+                            <div class="stat-item">
+                                Прогноз: <span class="stat-value" id="forecast-${exercise.key}">0</span> ${exercise.unit}
+                            </div>
+                            <div class="stat-item">
+                                Цель недели: <span class="stat-value" id="goal-${exercise.key}">0</span> ${exercise.unit}
+                            </div>
+                        </div>
+                    </div>
+
+                    <table class="workout-table">
+                        <thead>
+                            <tr>
+                                <th>День</th>
+                                <th>Подход 1</th>
+                                <th>✓</th>
+                                <th>Подход 2</th>
+                                <th>✓</th>
+                                <th>Подход 3</th>
+                                <th>✓</th>
+                                <th>Подход 4</th>
+                                <th>✓</th>
+                                <th>Подход 5</th>
+                                <th>✓</th>
+                                <th>Всего</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${[1, 2, 3].map(day => `
+                                <tr>
+                                    <td class="day-cell">День ${day}</td>
+                                    ${[1, 2, 3, 4, 5].map(set => `
+                                        <td class="reps-cell"
+                                            id="reps-${exercise.key}-${day}-${set}">0</td>
+                                        <td class="checkbox-cell"
+                                            id="check-${exercise.key}-${day}-${set}"
+                                            onclick="toggleCheck('${exercise.key}', ${day}, ${set})"></td>
+                                    `).join('')}
+                                    <td class="total-cell" id="total-${exercise.key}-${day}">0</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+
+                    <div class="info-text">
+                        ⏱ Нажмите ✓ для отметки выполнения • Таймер запустится автоматически
+                    </div>
+
+                    <button class="reset-exercise-btn" onclick="resetExercise('${exercise.key}', '${exercise.name}')">
+                        🔄 Сбросить ${exercise.name.toLowerCase()}
+                    </button>
+                </div>
+            `;
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            exercises.forEach(ex => {
+                document.getElementById(ex.key + 'Tab').innerHTML = createExerciseBlock(ex);
+            });
+            loadFromLocalStorage();
+            initChart();
+        });
+    </script>
+</body>
+</html>
